@@ -165,14 +165,16 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  if(!window.THREE){host.innerHTML='<div style="color:white;padding:30px">三维库加载失败，请检查网络后刷新。</div>';return;}
  const THREE=window.THREE;
  const scene=new THREE.Scene();
- scene.background=new THREE.Color(0xa8cbd3);
- scene.fog=new THREE.Fog(0xa8cbd3,22,75);
+ scene.background=new THREE.Color(0x789eac);
+ scene.fog=new THREE.Fog(0x789eac,24,78);
  const camera=new THREE.PerspectiveCamera(43,1,0.1,180);
  camera.position.set(10,8,14);
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
  renderer.setSize(host.clientWidth,host.clientHeight);
  renderer.outputEncoding=THREE.sRGBEncoding;
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=0.82;
  renderer.shadowMap.enabled=true;
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
  host.appendChild(renderer.domElement);
@@ -180,14 +182,14 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  controls.target.set(0,4.1,0); controls.enableDamping=true; controls.dampingFactor=.06;
  controls.minDistance=6;controls.maxDistance=34;controls.maxPolarAngle=Math.PI*.49;
 
- scene.add(new THREE.HemisphereLight(0xe8f8ff,0x3c6678,1.45));
- const sun=new THREE.DirectionalLight(0xfff4df,2.0);sun.position.set(-8,15,10);sun.castShadow=true;scene.add(sun);
- const fill=new THREE.DirectionalLight(0x76d8e6,.7);fill.position.set(8,7,-10);scene.add(fill);
+ scene.add(new THREE.HemisphereLight(0xd6eaf2,0x284653,0.82));
+ const sun=new THREE.DirectionalLight(0xfff4df,1.15);sun.position.set(-8,15,10);sun.castShadow=true;scene.add(sun);
+ const fill=new THREE.DirectionalLight(0x62b8ce,.28);fill.position.set(8,7,-10);scene.add(fill);
 
  // Ocean with gentle vertex waves
  const oceanGeo=new THREE.PlaneGeometry(180,180,100,100);
  oceanGeo.rotateX(-Math.PI/2);
- const oceanMat=new THREE.MeshPhongMaterial({color:0x328ba5,shininess:70,specular:0x5dabbc,side:THREE.DoubleSide});
+ const oceanMat=new THREE.MeshPhongMaterial({color:0x176b87,shininess:32,specular:0x376f80,side:THREE.DoubleSide});
  const ocean=new THREE.Mesh(oceanGeo,oceanMat);ocean.position.y=-.18;ocean.receiveShadow=true;scene.add(ocean);
  const basePositions=oceanGeo.attributes.position.array.slice();
  const grid=new THREE.GridHelper(65,52,0x75c3d0,0x5da9b9);grid.position.y=-.145;
@@ -202,7 +204,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  makeIsland(-17,-24,8,3);makeIsland(-7,-28,6,2.4);makeIsland(17,-31,9,3.2);makeIsland(28,-22,7,2.5);
 
  // Main turbine tower: tapered, multi-section surface
- const towerMat=new THREE.MeshStandardMaterial({color:0xe5edf0,roughness:.34,metalness:.12});
+ const towerMat=new THREE.MeshStandardMaterial({color:0xcbd8df,roughness:.58,metalness:.06});
  const towerGeo=new THREE.CylinderGeometry(.19,.39,6.0,32,12,false);
  const tower=new THREE.Mesh(towerGeo,towerMat);tower.position.set(0,2.82,0);tower.castShadow=true;scene.add(tower);
  // Dark tower door
@@ -224,10 +226,10 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  }
 
  // Nacelle and hub
- const nacelle=new THREE.Mesh(new THREE.BoxGeometry(.95,.43,.55),new THREE.MeshStandardMaterial({color:0xdce7eb,roughness:.4,metalness:.12}));
+ const nacelle=new THREE.Mesh(new THREE.BoxGeometry(.95,.43,.55),new THREE.MeshStandardMaterial({color:0xcbd8df,roughness:.55,metalness:.06}));
  nacelle.position.set(0,6.08,-.23);nacelle.castShadow=true;scene.add(nacelle);
  const hub=new THREE.Group();hub.position.set(0,6.08,.16);scene.add(hub);
- const hubBody=new THREE.Mesh(new THREE.SphereGeometry(.28,32,24),new THREE.MeshStandardMaterial({color:0xf4f8fa,roughness:.25,metalness:.12}));
+ const hubBody=new THREE.Mesh(new THREE.SphereGeometry(.28,32,24),new THREE.MeshStandardMaterial({color:0xd7e2e8,roughness:.48,metalness:.05}));
  hub.add(hubBody);
  const hubNose=new THREE.Mesh(new THREE.SphereGeometry(.17,24,18),new THREE.MeshStandardMaterial({color:0xd8e5eb,roughness:.25}));
  hubNose.position.z=.22;hub.add(hubNose);
@@ -246,7 +248,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
    const group=new THREE.Group();
    const stations=48, across=12;
    const verts=[],colors=[],indices=[];
-   const colorGood=new THREE.Color(0xe8eff2);
+   const colorGood=new THREE.Color(0xcbd7df);
    const colorCoat=new THREE.Color(0x8edbd4);
    const colorWarn=new THREE.Color(0xffbd69);
    const colorBad=new THREE.Color(0xf0445d);
@@ -336,7 +338,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
    const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);scene.add(g);
    const t=new THREE.Mesh(new THREE.CylinderGeometry(.055,.11,3.3,12),towerMat);t.position.y=1.5;g.add(t);
    const h=new THREE.Group();h.position.y=3.2;g.add(h);
-   const bmat=new THREE.MeshStandardMaterial({color:0xeaf1f4,roughness:.45});
+   const bmat=new THREE.MeshStandardMaterial({color:0xcbd8df,roughness:.58});
    const hh=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),bmat);h.add(hh);
    for(let k=0;k<3;k++){
      const b=new THREE.Mesh(new THREE.BoxGeometry(.07,1.45,.035),bmat);
@@ -357,7 +359,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
          const x=pos.getX(i), p=bladeProfile(t);
          const u=(x-p.sweep)/(p.chord*.5);
          const leading=Math.abs(u+.72)<.3;
-         let c=new THREE.Color(0xe8eff2);
+         let c=new THREE.Color(0xcbd7df);
          if(coatOn && leading)c.lerp(new THREE.Color(0x8edbd4),.75);
          if(heatOn && t>1-damage/125 && (leading||u<-.45)){
            const q=(t-(1-damage/125))/Math.max(.001,damage/125);
