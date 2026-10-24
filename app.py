@@ -153,6 +153,79 @@ st.markdown(
     hr {
         border-color: #263b52;
     }
+
+    /* Brand system */
+    .brand-row {
+        display: flex; align-items: center; gap: 10px; margin: 2px 0 12px 0;
+    }
+    .brand-mark {
+        width: 38px; height: 38px; display: inline-flex; align-items: center;
+        justify-content: center; border-radius: 10px;
+        background: linear-gradient(145deg, #1c6b7d, #14394e);
+        border: 1px solid #4bd2df; color: #f5fdff !important;
+        font-size: 13px; font-weight: 850; letter-spacing: 0.5px;
+        box-shadow: 0 0 18px rgba(82, 215, 232, 0.10); flex-shrink: 0;
+    }
+    .brand-name {
+        color: #f0f7ff !important; font-weight: 800; letter-spacing: 1.8px;
+        font-size: 0.9rem; line-height: 1.25;
+    }
+    .brand-caption {
+        color: #91a9c1 !important; font-size: 0.68rem;
+        letter-spacing: 1.1px; margin-top: 3px;
+    }
+    /* Dark file uploader */
+    [data-testid="stFileUploader"] section,
+    [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] {
+        background: #112338 !important; border: 1px dashed #42627e !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stFileUploader"] [data-testid="stFileUploaderDropzone"] * {
+        color: #dce9f7 !important;
+    }
+    [data-testid="stFileUploader"] button {
+        background: #1b354c !important; color: #f2f8ff !important;
+        border: 1px solid #41617b !important; border-radius: 7px !important;
+    }
+    [data-testid="stFileUploader"] small { color: #9eb5ca !important; }
+    /* Dark select boxes */
+    [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+    [data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
+        background: #13263a !important; border-color: #35516d !important;
+        color: #edf4fc !important;
+    }
+    [data-testid="stSelectbox"] input,
+    [data-testid="stMultiSelect"] input { color: #edf4fc !important; }
+    [data-baseweb="popover"] ul { background: #13263a !important; }
+    [role="option"] { background: #13263a !important; color: #eaf2fb !important; }
+    [role="option"]:hover { background: #20435c !important; }
+    /* Dark HTML tables */
+    .pfd-table-wrap {
+        width: 100%; overflow-x: auto; max-height: 390px; overflow-y: auto;
+        border: 1px solid #29435c; border-radius: 10px;
+        background: #0d1b2b; margin: 4px 0 12px 0;
+    }
+    table.pfd-table {
+        width: 100%; border-collapse: separate; border-spacing: 0;
+        background: #0d1b2b !important; color: #dce7f4 !important;
+        font-size: 0.88rem;
+    }
+    table.pfd-table thead th {
+        position: sticky; top: 0; z-index: 1; background: #172b40 !important;
+        color: #cce0f1 !important; font-weight: 700; text-align: left;
+        padding: 12px 14px; border-bottom: 1px solid #35516d; white-space: nowrap;
+    }
+    table.pfd-table tbody td {
+        background: #0f2032 !important; color: #d8e5f2 !important;
+        padding: 10px 14px; border-bottom: 1px solid #20364b; white-space: nowrap;
+    }
+    table.pfd-table tbody tr:nth-child(even) td { background: #12263a !important; }
+    table.pfd-table tbody tr:hover td { background: #19364d !important; color: #fff !important; }
+    .empty-table {
+        padding: 16px; color: #a7bbcf; background: #0f2032; border-radius: 8px;
+    }
+    [data-testid="stRadio"] label { color: #dce7f4 !important; }
+    [data-testid="stRadio"] > div { gap: 0.6rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -256,9 +329,29 @@ def make_dark_layout(fig, height=350, margin=None):
     return fig
 
 
+
+def render_dark_table(frame: pd.DataFrame, max_height: int = 390) -> None:
+    """Render a dark HTML table instead of Streamlit's bright default grid."""
+    if frame is None or frame.empty:
+        st.markdown('<div class="empty-table">没有可显示的记录。</div>', unsafe_allow_html=True)
+        return
+    html_table = frame.to_html(index=False, escape=True, border=0, classes="pfd-table", na_rep="—")
+    st.markdown(
+        f'<div class="pfd-table-wrap" style="max-height:{int(max_height)}px">{html_table}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 # ------------------------- Sidebar ---------------------------
 with st.sidebar:
-    st.markdown('<div class="eyebrow">OCEAN TWIN</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-row">'
+        '<div class="brand-mark">PFD</div>'
+        '<div><div class="brand-name">OCEAN TWIN</div>'
+        '<div class="brand-caption">INDUSTRIAL DIGITAL TWIN</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     st.markdown("## 监测控制中心")
     st.markdown('<div class="small-muted">SUBSEA INTEGRITY MONITORING</div>', unsafe_allow_html=True)
     st.markdown("---")
@@ -312,7 +405,14 @@ with st.sidebar:
 # ------------------------- Navigation ------------------------
 header_left, header_right = st.columns([4, 1])
 with header_left:
-    st.markdown('<div class="eyebrow">OFFSHORE ENGINEERING / DIGITAL TWIN</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="brand-row">'
+        '<div class="brand-mark">PFD</div>'
+        '<div><div class="eyebrow">PFD · OFFSHORE ENGINEERING</div>'
+        '<div class="brand-caption">CORROSION MONITORING / DIGITAL TWIN</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     st.title("深海管道腐蚀监测平台")
     st.markdown(
         '<div class="subtitle">SUBSEA PIPELINE INTEGRITY · 数字孪生演示原型</div>',
@@ -547,7 +647,7 @@ if page == "综合监测":
         else:
             display_alerts = alerts[["管段编号", "位置", "当前壁厚_mm"]].copy()
             display_alerts.columns = ["管段编号", "位置", "壁厚 (mm)"]
-            st.dataframe(display_alerts, use_container_width=True, hide_index=True, height=225)
+            render_dark_table(display_alerts, max_height=225)
 
         st.markdown(
             f"""
@@ -583,7 +683,7 @@ if page == "综合监测":
             mime="text/csv",
             use_container_width=True,
         )
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    render_dark_table(df, max_height=390)
 
 elif page == "管段数据":
     st.markdown('<div class="eyebrow">ASSET DATA / MEASUREMENT RECORDS</div>', unsafe_allow_html=True)
@@ -592,7 +692,7 @@ elif page == "管段数据":
 
     search_text = st.text_input("搜索管段编号", placeholder="例如 P-12")
     filtered = df[df["管段编号"].astype(str).str.contains(search_text, case=False, na=False)]
-    st.dataframe(filtered, use_container_width=True, hide_index=True)
+    render_dark_table(filtered, max_height=430)
 
     csv_bytes = filtered.to_csv(index=False).encode("utf-8-sig")
     st.download_button(
@@ -641,6 +741,6 @@ elif page == "系统说明":
 
 st.markdown("---")
 st.markdown(
-    '<div class="small-muted">OCEAN TWIN · Corrosion Monitoring Prototype · 演示数据不用于实际工程安全决策</div>',
+    '<div class="small-muted">PFD · OCEAN TWIN · Corrosion Monitoring Prototype · 演示数据不用于实际工程安全决策</div>',
     unsafe_allow_html=True,
 )
