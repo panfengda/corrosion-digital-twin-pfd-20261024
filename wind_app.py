@@ -129,7 +129,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
   <div class="control"><label>涂层损伤演示值 <output id="damageOut">28%</output></label>
    <input id="damage" type="range" min="0" max="100" value="28"></div>
   <div class="control"><label>涂层显示</label>
-   <div class="btnrow"><button id="coatBtn" class="primary">✓ 显示涂层</button><button id="heatBtn">显示损伤热图</button></div></div>
+   <div class="btnrow"><button id="coatBtn" class="primary">✓ 显示涂层</button><button id="heatBtn">隐藏损伤热图</button></div></div>
   <div class="divider"></div>
   <div class="note">数据为程序生成的演示值。叶片涂层和损伤颜色用于展示交互逻辑，不代表真实检测结论。</div>
  </section>
@@ -264,11 +264,13 @@ button.primary{background:#218e8b;border-color:#43c4bd}
        const leading=Math.abs(u+0.72)<.18;
        const trailing=t>.9;
        if(coatOn && leading) col.lerp(colorCoat,.75);
-       const damageStart=1-damage/125;
-       if(heatOn && t>damageStart && (leading || u<-.45)){
-         const q=(t-damageStart)/Math.max(.001,1-damageStart);
-         col.lerp(colorWarn,Math.min(.8,q*1.6));
-         if(q>.58) col.lerp(colorBad,Math.min(.88,(q-.58)*2.2));
+       const damageStart=0.82-damage/150;
+       const inDamageBand=(u>-.98 && u<.22);
+       if(heatOn && damage>0 && t>damageStart && inDamageBand){
+         const q=Math.max(0,Math.min(1,(t-damageStart)/Math.max(.001,1-damageStart)));
+         const edgeFactor=Math.max(0,Math.min(1,(.24-u)/1.15));
+         col.lerp(colorWarn,Math.min(.96,.35+q*.65)*edgeFactor);
+         if(q>.22) col.lerp(colorBad,Math.min(.98,(q-.22)*1.7)*edgeFactor);
        }
        if(trailing && heatOn && damage>55) col.lerp(colorWarn,.35);
        colors.push(col.r,col.g,col.b);
@@ -333,59 +335,71 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  }
  for(let i=0;i<3;i++)makeBlade(i);
 
- // Add a handful of background turbines with simplified but recognizable geometry.
+ // Distant turbines reuse the same detailed aerodynamic blade geometry and materials.
+ const distantRotors=[];
  function addDistantTurbine(x,z,s){
    const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);scene.add(g);
-   const t=new THREE.Mesh(new THREE.CylinderGeometry(.055,.11,3.3,12),towerMat);t.position.y=1.5;g.add(t);
-   const h=new THREE.Group();h.position.y=3.2;g.add(h);
-   const bmat=new THREE.MeshStandardMaterial({color:0xcbd8df,roughness:.58});
-   const hh=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),bmat);h.add(hh);
+   const farTower=tower.clone(true);farTower.position.set(0,2.82,0);farTower.castShadow=false;farTower.receiveShadow=false;g.add(farTower);
+   const farNacelle=nacelle.clone(true);farNacelle.position.set(0,6.08,-.23);farNacelle.castShadow=false;g.add(farNacelle);
+   const farHub=new THREE.Group();farHub.position.set(0,6.08,.16);g.add(farHub);
+   farHub.add(hubBody.clone());farHub.add(hubNose.clone());
+   const rotor=new THREE.Group();rotor.position.set(0,6.08,.16);g.add(rotor);
    for(let k=0;k<3;k++){
-     const b=new THREE.Mesh(new THREE.BoxGeometry(.07,1.45,.035),bmat);
-     b.position.y=.78;b.rotation.z=k*2*Math.PI/3;h.add(b);
+     const detailedBlade=blades[k].clone(true);
+     detailedBlade.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
+     rotor.add(detailedBlade);
    }
+   for(let k=0;k<3;k++){
+     const a=k*2*Math.PI/3+.25,px=Math.cos(a)*.72,pz=Math.sin(a)*.72;
+     const leg=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,1.35,16),supportMat);
+     leg.position.set(px,-.25,pz);g.add(leg);
+     const cap=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,.12,16),capMat);
+     cap.position.set(px,.46,pz);g.add(cap);
+   }
+   distantRotors.push(rotor);
  }
  [[-10,-14,.75],[-16,-20,.55],[12,-18,.65],[19,-24,.5],[-4,-25,.48]].forEach(p=>addDistantTurbine(...p));
 
  function recolorBlades(){
-   // Rebuild vertex colors in-place based on damage/coating mode.
+   const good=new THREE.Color(0xcbd7df);
+   const coat=new THREE.Color(0x58cfc4);
+   const warn=new THREE.Color(0xffa34d);
+   const bad=new THREE.Color(0xf0445d);
    for(const group of blades){
-     const mesh=group.children.find(o=>o.isMesh && o.geometry.attributes.color && o.geometry.attributes.position.count>100);
-     if(mesh){
-       const pos=mesh.geometry.attributes.position, col=mesh.geometry.attributes.color;
-       const upperCount=49*13;
+     for(const obj of group.children){
+       if(!obj.isMesh || !obj.geometry.attributes.position || !obj.geometry.attributes.color) continue;
+       const pos=obj.geometry.attributes.position, col=obj.geometry.attributes.color;
+       const isStrip=pos.count===98;
        for(let i=0;i<pos.count;i++){
          const y=pos.getY(i),t=Math.max(0,Math.min(1,y/4));
-         const x=pos.getX(i), p=bladeProfile(t);
-         const u=(x-p.sweep)/(p.chord*.5);
-         const leading=Math.abs(u+.72)<.3;
-         let c=new THREE.Color(0xcbd7df);
-         if(coatOn && leading)c.lerp(new THREE.Color(0x8edbd4),.75);
-         if(heatOn && t>1-damage/125 && (leading||u<-.45)){
-           const q=(t-(1-damage/125))/Math.max(.001,damage/125);
-           c.lerp(new THREE.Color(0xffbd69),Math.min(.8,q*1.4));
-           if(q>.58)c.lerp(new THREE.Color(0xf0445d),Math.min(.9,(q-.58)*2.3));
+         let c=good.clone();
+         if(isStrip){
+           c=coat.clone();
+           const start=0.82-damage/150;
+           if(heatOn && damage>0 && t>start){
+             const q=(t-start)/Math.max(.001,1-start);
+             c.copy(q>.48?bad:warn);
+           } else if(!coatOn) c.copy(good);
+         } else {
+           const x=pos.getX(i),p=bladeProfile(t);
+           const u=(x-p.sweep)/Math.max(.001,p.chord*.5);
+           const leading=Math.abs(u+.72)<.3;
+           if(coatOn && leading)c.lerp(coat,.8);
+           const start=0.82-damage/150;
+           if(heatOn && damage>0 && t>start && u>-.98 && u<.22){
+             const q=Math.max(0,Math.min(1,(t-start)/Math.max(.001,1-start)));
+             const edgeFactor=Math.max(0,Math.min(1,(.24-u)/1.15));
+             c.lerp(warn,Math.min(.98,.35+q*.65)*edgeFactor);
+             if(q>.22)c.lerp(bad,Math.min(.99,(q-.22)*1.7)*edgeFactor);
+           }
          }
-         col.setXYZ(i,c.r,c.g,c.b);
-       }
-       col.needsUpdate=true;mesh.geometry.computeVertexNormals();
-     }
-   }
-   // Update strip colors too
-   for(const group of blades){
-     const strip=group.children.find(o=>o.isMesh && o.geometry.attributes.color && o.geometry.attributes.position.count===98);
-     if(strip){
-       const col=strip.geometry.attributes.color,pos=strip.geometry.attributes.position;
-       for(let i=0;i<pos.count;i++){
-         const t=pos.getY(i)/4;
-         let c=coatOn?new THREE.Color(0x8edbd4):new THREE.Color(0xe8eff2);
-         if(heatOn && t>1-damage/125)c=new THREE.Color(t>1-damage/170?0xf0445d:0xffbd69);
          col.setXYZ(i,c.r,c.g,c.b);
        }
        col.needsUpdate=true;
      }
    }
  }
+
  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2200);}
  let rpm=12,paused=false,last=performance.now(),elapsed=0;
  const $=id=>document.getElementById(id);
@@ -428,7 +442,7 @@ button.primary{background:#218e8b;border-color:#43c4bd}
  function animate(now){
    requestAnimationFrame(animate);
    const dt=Math.min(.05,(now-last)/1000);last=now;elapsed+=dt;
-   if(!paused)bladeRoot.rotation.z+=rpm*2*Math.PI/60*dt;
+   if(!paused){const spin=rpm*2*Math.PI/60*dt;bladeRoot.rotation.z+=spin;for(const rotor of distantRotors)rotor.rotation.z+=spin;}
    const p=oceanGeo.attributes.position;
    for(let i=0;i<p.count;i++){
      const x=basePositions[i*3],z=basePositions[i*3+2];
